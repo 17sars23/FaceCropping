@@ -7,7 +7,7 @@ import glob
 #from PIL import Image, ImageDraw
 
 
-def FacePosition(image_path, Output_dir):
+def FacePosition(image_path, OutPath):
 
     #ファイル読み込み
     image = cv2.imread(image_path)
@@ -27,7 +27,7 @@ def FacePosition(image_path, Output_dir):
     cascade = cv2.CascadeClassifier(cascade_path)
 
     #物体認識（顔認識）の実行
-    facerect = cascade.detectMultiScale(image_gray, scaleFactor=1.2, minNeighbors=3, minSize=(100, 100))
+    facerect = cascade.detectMultiScale(image_gray, scaleFactor=1.2, minNeighbors=3, minSize=(30, 30))
 
     #顔の切り出し、複数候補がある場合最大面積を採用
     S = 0
@@ -43,11 +43,6 @@ def FacePosition(image_path, Output_dir):
         startX = int(x+(max_width/2)-side/2)
         dst = image[0:side, startX:startX+side]
 
-        #出力ディレクトリの設定
-        other, dir = os.path.split(os.path.dirname(i))
-        tmp_dir = Output_dir + dir + "/"
-        os.makedirs(tmp_dir, exist_ok=True)
-        OutPath = tmp_dir + os.path.basename(i)
         cv2.imwrite(OutPath, dst)
 
         #検出した顔を囲む矩形の作成
@@ -58,28 +53,31 @@ def FacePosition(image_path, Output_dir):
         check = "./check/" + os.path.basename(i)
         cv2.imwrite(check, image)
 
-        return OutPath
+        return True
     else:
         print("Cannot find face:", image_path)
+        return False
 
 
-def Masking(squareImagePath, maskImagePath):
+def Masking(squareImagePath, maskImagePath, MaskOutPath):
     #画像の読み込み
     img = cv2.imread(squareImagePath)
     if(img is None):
-    	print(squareImagePath,'Cannot open the image.')
-    	quit()
-    #マスクをグレースケールで読み込む
-    mask = cv2.imread(maskImagePath, 0)
-    #BGRにチャンネル分解
-    bgr = cv2.split(img)
-    #画像のリサイズ
-    img_h, img_w = img.shape[:2]
-    mask = cv2.resize(mask, (img_h, img_w))
-    bgra = cv2.bitwise_and(img, img, mask=mask)
-    #透明チャンネル(マスク)を追加
-    #bgra = cv2.merge(bgr + [mask])
-    cv2.imwrite("new.png", bgra)
+    	print('Cannot open the image:',squareImagePath)
+    else:
+        #マスクをグレースケールで読み込む
+        mask = cv2.imread(maskImagePath, 0)
+        #画像のリサイズ
+        img_h, img_w = img.shape[:2]
+        if img_h == img_w:
+            #BGRにチャンネル分解
+            bgr = cv2.split(img)
+            mask = cv2.resize(mask, (img_h, img_w))
+            #透明チャンネル(マスク)を追加
+            bgra = cv2.merge(bgr + [mask])
+            cv2.imwrite(MaskOutPath, bgra)
+        else:
+            print("Not squre:", squareImagePath)
 
 
 if __name__=="__main__":
@@ -88,9 +86,9 @@ if __name__=="__main__":
     image_dir = "./pic/"
 
     #ディレクトリ内の検索＆画像のリスト化
-    img = []
+    imgs = []
     for x in glob.glob(image_dir+'**/*.jpg', recursive=True):
-        img.append(x)
+        imgs.append(x)
 
     #出力&顔検出確認ディレクトリ作成
     Output_dir = "./result/"
@@ -98,14 +96,22 @@ if __name__=="__main__":
     os.makedirs(Output_dir, exist_ok=True)
     os.makedirs(Check_dir, exist_ok=True)
 
-    for i in img:
-        squareImagePath = FacePosition(i, Output_dir)
+    for i in imgs:
 
-        if len(args) == 2 and squareImagePath != None:
+        #出力パスの設定
+        other, dir = os.path.split(os.path.dirname(i))
+        OutPath = Output_dir + dir + "/" + os.path.basename(i)
+        os.makedirs(os.path.dirname(OutPath), exist_ok=True)
+
+        r = FacePosition(i, OutPath)
+
+        if len(args) == 2 and r == True:
             key = args[1]
-            maskImagePath = "./mask/" + key + ".png"
 
+            maskImagePath = "./mask/" + key + ".png"
             Mask_dir = "./mask_result_" + key + "/"
+            name, ext = os.path.splitext(os.path.basename(i))
+            MaskOutPath = Mask_dir + name + ".png"
             os.makedirs(Mask_dir, exist_ok=True)
 
-            Masking(squareImagePath, maskImagePath)
+            Masking(OutPath, maskImagePath, MaskOutPath)
