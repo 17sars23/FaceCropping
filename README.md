@@ -27,7 +27,7 @@ $ python3 cropping.py
 
 ### 切り抜きオプション
 デフォルトは正方形に切り抜かれてます．
-`/mask`の中に`1.png`の丸と`2.png`の11角形を用意してあり，
+`/mask`の中に`1.png`の円のマスク画像を用意してあり，
 ```sh
 $ python3 cropping.py 1
 ```
