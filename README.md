@@ -8,7 +8,7 @@
 ### Install
 OpenCVのインストールには数分かかるかと...
 ```sh
-brew install opencv
+$ brew install opencv
 ```
 
 ## Quick Start
