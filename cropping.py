@@ -105,7 +105,7 @@ if __name__=="__main__":
             key = args[1]
             maskImagePath = "./mask/" + key + ".png"
 
-            Mask_dir = "./mask_result" + key + "/"
+            Mask_dir = "./mask_result_" + key + "/"
             os.makedirs(Mask_dir, exist_ok=True)
 
             Masking(squareImagePath, maskImagePath)
